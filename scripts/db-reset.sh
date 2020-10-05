@@ -33,32 +33,34 @@
 #
 #  @usage
 #
-#   1. Create script in root directory
+#   0. Always verify a script from untrusted sources, or run it in a safe environment
+#   1. Create script in RedwoodJS app root directory
 #   2. Invoke it with e.g.
 #      $ /bin/bash ./db-reset.sh
 #
-#
 
-# Check if psql is installed locally
+# Check if psql is installed
+echo -en "\n- Checking if Postgres client is installed..."
 if [ ! command -v psql &> /dev/null ]; then
-    echo "Postgres client 'psql' was not installed on your machine. "
+    echo -e "fail\n"
+    echo "Postgres client 'psql' was not found on your machine. "
     exit
 fi
+echo "done"
 
 # Check if we are in the root directory by looking for the api/prisma directory
 # A better way would be to check if @redwoodjs/core exist in package.json?
-echo -n "- Checking that we are in the root directory..."
+echo -n "- Checking if we are in the root directory..."
 if [ ! -d "./api/prisma" ]; then
     echo -e "fail\n"
     echo "Invalid run. Are you sure you are running this from the root directory?"
     echo "Current path: $(pwd)"
-
     exit
 fi
 echo "done"
 
 # Check if .env present
-echo -n "- Checking that .env file is present..."
+echo -n "- Checking if .env file is present..."
 if ! test -f "./.env"; then
     echo "fail"
     exit
@@ -66,19 +68,22 @@ fi
 echo "done"
 
 # Load the env
-. ./.env > /dev/null
+echo -n "- Load environment variables..."
+. ./.env > /dev/null && echo "done" || (echo "fail" && exit)
 
 # Recursively remove prisma migrations
 echo -n "- Deleting api/prisma/migrations..."
 rm -rf ./api/prisma/migrations && echo "done" || (echo "fail" && exit)
 
 # Parse database credentials
+# @todo: Use regex with preferably sed>=4
 echo "- Parsing database credentials from DATABASE_URL..."
 DB_HOSTNAME=$(echo $DATABASE_URL | cut -d '@' -f2 | cut -d '/' -f1)
 DB_NAME=$(echo $DATABASE_URL | cut -d '/' -f4)
 DB_USERNAME=$(echo $DATABASE_URL | cut -d '/' -f3 | cut -d ':' -f1)
 DB_PASSWORD=$(echo $DATABASE_URL | cut -d '/' -f3 | cut -d ':' -f2 | cut -d '@' -f1)
 
+# Print database credentials
 echo
 echo "DB_HOSTNAME   $DB_HOSTNAME"
 echo "DB_NAME       $DB_NAME"
@@ -86,8 +91,7 @@ echo "DB_USERNAME   $DB_USERNAME"
 echo "DB_PASSWORD   $DB_PASSWORD"
 echo
 
-# Drop all tables
-# @todo: Do something cool here
+# Ask if everything looks OK before we proceed
 read -p "- !! Verify that these database credentials are correct and then press any key..."
 echo
 
