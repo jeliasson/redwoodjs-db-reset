@@ -78,10 +78,10 @@ rm -rf ./api/prisma/migrations && echo "done" || (echo "fail" && exit)
 # Parse database credentials
 # @todo: Use regex with preferably sed>=4
 echo "- Parsing database credentials from DATABASE_URL..."
-DB_HOSTNAME=$(echo $DATABASE_URL | cut -d '@' -f2 | cut -d '/' -f1)
-DB_NAME=$(echo $DATABASE_URL | cut -d '/' -f4)
-DB_USERNAME=$(echo $DATABASE_URL | cut -d '/' -f3 | cut -d ':' -f1)
-DB_PASSWORD=$(echo $DATABASE_URL | cut -d '/' -f3 | cut -d ':' -f2 | cut -d '@' -f1)
+DB_HOSTNAME=$(echo "$DATABASE_URL" | cut -d '@' -f2 | cut -d '/' -f1)
+DB_NAME=$(echo "$DATABASE_URL" | cut -d '/' -f4)
+DB_USERNAME=$(echo "$DATABASE_URL" | cut -d '/' -f3 | cut -d ':' -f1)
+DB_PASSWORD=$(echo "$DATABASE_URL" | cut -d '/' -f3 | cut -d ':' -f2 | cut -d '@' -f1)
 
 # Print database credentials
 echo
@@ -100,7 +100,7 @@ export PGPASSWORD=$DB_PASSWORD && echo "done" || (echo "fail" && exit)
 
 echo -n "- Deleting all tables in schema '${DB_NAME}'..."
 # https://stackoverflow.com/a/13033467
-(psql --host $DB_HOSTNAME -U $DB_USERNAME $DB_NAME -t -c "select 'drop table \"' || tablename || '\" cascade;' from pg_tables where schemaname = 'public'"  | psql --host $DB_HOSTNAME -U $DB_USERNAME $DB_NAME)  2>&1 > /dev/null && echo "done" || (echo "fail" && exit)
+(psql --host "$DB_HOSTNAME" -U "$DB_USERNAME" "$DB_NAME" -t -c "select 'drop table \"' || tablename || '\" cascade;' from pg_tables where schemaname = 'public'"  | psql --host "$DB_HOSTNAME" -U "$DB_USERNAME" "$DB_NAME")  2>&1 > /dev/null && echo "done" || (echo "fail" && exit)
 
 # Save database schema
 echo -n "- Saving database schema (yarn rw db save)..."
