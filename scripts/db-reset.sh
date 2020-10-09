@@ -29,7 +29,6 @@
 #
 #   - Most commands redirect stdout to /dev/null and display stderr's (errors)
 #   - Parsing of database credentials is hacky. Only run this on local development.
-#   - Finally, don't specify a port in the DATABASE_URL
 #
 #  @usage
 #
@@ -78,7 +77,8 @@ rm -rf ./api/prisma/migrations && echo "done" || (echo "fail" && exit)
 # Parse database credentials
 # @todo: Use regex with preferably sed>=4
 echo "- Parsing database credentials from DATABASE_URL..."
-DB_HOSTNAME=$(echo "$DATABASE_URL" | cut -d '@' -f2 | cut -d '/' -f1)
+DB_HOSTNAME=$(echo "$DATABASE_URL" | cut -d '@' -f2 | cut -d '/' -f1 | cut -d ':' -f1)
+DB_PORT=$(echo "$DATABASE_URL" | cut -d '@' -f2 | cut -d '/' -f1 | cut -d ':' -f2)
 DB_NAME=$(echo "$DATABASE_URL" | cut -d '/' -f4)
 DB_USERNAME=$(echo "$DATABASE_URL" | cut -d '/' -f3 | cut -d ':' -f1)
 DB_PASSWORD=$(echo "$DATABASE_URL" | cut -d '/' -f3 | cut -d ':' -f2 | cut -d '@' -f1)
@@ -86,6 +86,7 @@ DB_PASSWORD=$(echo "$DATABASE_URL" | cut -d '/' -f3 | cut -d ':' -f2 | cut -d '@
 # Print database credentials
 echo
 echo "DB_HOSTNAME   $DB_HOSTNAME"
+echo "DB_PORT       $DB_PORT"
 echo "DB_NAME       $DB_NAME"
 echo "DB_USERNAME   $DB_USERNAME"
 echo "DB_PASSWORD   $DB_PASSWORD"
@@ -100,7 +101,7 @@ export PGPASSWORD=$DB_PASSWORD && echo "done" || (echo "fail" && exit)
 
 echo -n "- Deleting all tables in schema '${DB_NAME}'..."
 # https://stackoverflow.com/a/13033467
-(psql --host "$DB_HOSTNAME" -U "$DB_USERNAME" "$DB_NAME" -t -c "select 'drop table \"' || tablename || '\" cascade;' from pg_tables where schemaname = 'public'"  | psql --host "$DB_HOSTNAME" -U "$DB_USERNAME" "$DB_NAME")  2>&1 > /dev/null && echo "done" || (echo "fail" && exit)
+(psql --host "$DB_HOSTNAME" --port $DB_PORT -U "$DB_USERNAME" "$DB_NAME" -t -c "select 'drop table \"' || tablename || '\" cascade;' from pg_tables where schemaname = 'public'"  | psql --host "$DB_HOSTNAME" --port $DB_PORT -U "$DB_USERNAME" "$DB_NAME")  2>&1 > /dev/null && echo "done" || (echo "fail" && exit)
 
 # Save database schema
 echo -n "- Saving database schema (yarn rw db save)..."
